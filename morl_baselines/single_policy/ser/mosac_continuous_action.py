@@ -9,6 +9,7 @@ import time
 from copy import deepcopy
 from typing import Optional, Tuple, Union
 from typing_extensions import override
+import os
 
 import gymnasium as gym
 import numpy as np
@@ -55,6 +56,13 @@ class MOSoftQNetwork(nn.Module):
         x = th.cat([x, a], dim=-1)
         x = self.critic(x)
         return x
+    
+    def save_checkpoint(self, name):
+        # print('... saving checkpoint ...')
+        th.save(self.state_dict(), os.path.join('trained_models', name))
+
+    def load_checkpoint(self, name):
+        self.load_state_dict(th.load(os.path.join('trained_models', name)))
 
 
 LOG_STD_MAX = 2
@@ -115,6 +123,14 @@ class MOSACActor(nn.Module):
         log_prob = log_prob.sum(1, keepdim=True)
         mean = th.tanh(mean) * self.action_scale + self.action_bias
         return action, log_prob, mean
+    
+    def save_checkpoint(self, name):
+        # print('... saving checkpoint ...')
+        th.save(self.state_dict(), os.path.join('trained_models', name))
+
+    def load_checkpoint(self, name):
+        self.load_state_dict(th.load(os.path.join('trained_models', name)))
+
 
 
 class MOSAC(MOPolicy):
@@ -476,3 +492,17 @@ class MOSAC(MOPolicy):
                     )
 
             self.global_step += 1
+
+    def save_model(self, name):
+        self.actor.save_checkpoint(name+"actor")
+        self.qf1.save_checkpoint(name+"qf1")
+        self.qf2.save_checkpoint(name+"qf2")
+        self.qf1_target.save_checkpoint(name+"qf1t")
+        self.qf2_target.save_checkpoint(name+"qf2t")
+
+    def load_model(self, name):
+        self.actor.load_checkpoint(name+"actor")
+        self.qf1.load_checkpoint(name+"qf1")
+        self.qf2.load_checkpoint(name+"qf2")
+        self.qf1_target.load_checkpoint(name+"qf1t")
+        self.qf2_target.load_checkpoint(name+"qf2t")
